@@ -1,90 +1,100 @@
-from flet import * 
-from time import sleep
+from flet import *
+import datetime
 
-def main(page:Page):
-    page.title = "تطبيق المجال"
+def main(page: Page):
+    page.title = "عمل رابط واتساب"
     page.window.width = 390
     page.window.height = 740
     page.window.top = 10
     page.window.left = 960
     page.horizontal_alignment = "center"
     page.vertical_alignment = "center"
-    page.bgcolor = colors.WHITE
+    
+    # إعدادات الوضع الداكن
+    page.bgcolor = colors.BLACK  # تحديد الخلفية إلى اللون الأسود لوضع داكن
 
-
+    # شريط التطبيق العلوي
     page.appbar = AppBar(
-        title=Text("عمل روابط وتساب مجانا"),
+        title=Text("عمل روابط واتساب مجانا", color=colors.WHITE),
         bgcolor='green',
-        leading=Icon(icons.HOME),
+        leading=Icon(icons.HOME, color=colors.WHITE),
         center_title=True,
         leading_width=80,
         actions=[
             PopupMenuButton(
-               #Item Button
                 items=[
-                    PopupMenuItem(text='انشاء حساب مجال' , icon=icons.CODE),
-                    PopupMenuItem(text='شرح التطبيق' , icon=icons.APP_BLOCKING),
-                    PopupMenuItem(text='المطورين' , icon=icons.DEVELOPER_MODE_SHARP),
+                    PopupMenuItem(text='شرح التطبيق', icon=icons.APP_BLOCKING , on_click=lambda e: page.launch_url("https://wa.me/201552825549")),
+                    PopupMenuItem(text='المطورين', icon=icons.DEVELOPER_MODE_SHARP, on_click=lambda e: page.launch_url("https://wa.me/201552825549")),
                     PopupMenuItem(),
-                    PopupMenuItem(text="تقييم التطبيق" , icon=icons.STAR_HALF),
+                    PopupMenuItem(text="تقييم التطبيق", icon=icons.STAR_HALF , on_click=lambda e: page.launch_url("https://wa.me/201552825549")),
                 ]
             ),
         ]
     )
 
+    # وظيفة توليد الرابط
+    def generate_link(e):
+        if number.value.strip():
+            try:
+                phone_number = int(number.value)
+                message_text = message.value.strip().replace(" ", "%20") if message.value else ""
+                whatsapp_link = f"https://wa.me/{phone_number}?text={message_text}" if message_text else f"https://wa.me/{phone_number}"
+                
+                # نسخ الرابط إلى الحافظة
+                page.set_clipboard(whatsapp_link)
 
-    def button_clicked(e):
-        t.value = f"Dropdown value is:  {dd.value}"
-        page.update()
+                # إظهار الرابط الناتج
+                result_text.value = f"رابط واتساب تم إنشاؤه: {whatsapp_link}"
 
-        t = Text()
-        b = ElevatedButton(text="Submit", on_click=button_clicked)
-        dd= ""
-        page.add(dd, b, t)
-    def link(e):
-        l = f"https://wa.me/{int(number.value)}"
-        print(l)
-        number.value = ""
-        alert = AlertDialog(
-            title= Text("تم انشاء الرابط" , size=18 , color="green")
-        )
-        page.overlay.append(alert)
-        alert.open = True
-        page.update()
-    def button_clicked(e):
-        page.bgcolor = dd.value
-        page.update()
-    t = Text()
-    b = ElevatedButton(text="Submit", on_click=button_clicked)
-    dd = Dropdown(
-        width=200,
-        bgcolor=colors.AMBER,
-        color= colors.WHITE,
-        icon=icons.COLOR_LENS,
-        options=[
-            dropdown.Option("Red"),
-            dropdown.Option("Green"),
-            dropdown.Option("Blue"),
-        ],
+                # حفظ تاريخ آخر عملية
+                last_generated_label.value = f"آخر عملية تم إنشاؤها: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+
+                # إنشاء تنبيه SnackBar
+                snackbar = SnackBar(content=Text("✅ تم إنشاء الرابط ونسخه للحافظة", color=colors.WHITE), bgcolor="green")
+                page.overlay.append(snackbar)
+                snackbar.open = True
+                page.update()
+            except ValueError:
+                snackbar = SnackBar(content=Text("❌ يرجى إدخال رقم صحيح!", color=colors.WHITE), bgcolor="red")
+                page.overlay.append(snackbar)
+                snackbar.open = True
+                page.update()
+        else:
+            snackbar = SnackBar(content=Text("⚠️ يرجى إدخال رقم الهاتف!", color=colors.WHITE), bgcolor="red")
+            page.overlay.append(snackbar)
+            snackbar.open = True
+            page.update()
+
+    # صورة واتساب
+    whatsapp_image = Image(
+        src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg",
+        width=100,
+        height=100
     )
 
-    
-    audio1 = Audio(
-        src="/Users/coderx/Desktop/قران/ساعتين من الهدوء والإسترخاء للقارئ بدر التركي.m4a" ,
-    )
-    
-    page.overlay.append(audio1)
+    # حقول الإدخال
+    number = TextField(label="رقم الهاتف", text_align='center', prefix_icon=icons.PHONE, color=colors.WHITE, bgcolor=colors.BLACK)
+    message = TextField(label="الرسالة (اختياري)", text_align='center', prefix_icon=icons.MESSAGE, color=colors.WHITE, bgcolor=colors.BLACK)
+
+    # زر الإنشاء
+    btn = ElevatedButton("إنشاء ونسخ", width=170, color=colors.WHITE, on_click=generate_link)
+
+    # حقل لإظهار الرابط الناتج
+    result_text = Text("", size=16, color=colors.WHITE, text_align="center")
+
+    # حقل لإظهار تاريخ آخر عملية
+    last_generated_label = Text("لم يتم إنشاء رابط بعد.", size=14, color=colors.WHITE, text_align="center")
+
+    # ترتيب العناصر في الصفحة
     page.add(
-        Text("This is an app with background audio."),
-        ElevatedButton("Stop playing", on_click=lambda _: audio1.pause()),
-        ElevatedButton("Stop2 playing", on_click=lambda _: audio1.resume()),
-        ElevatedButton("Start playing", on_click=lambda _: audio1.play()),
+        whatsapp_image,  # إضافة صورة واتساب
+        number,
+        message,
+        btn,
+        result_text,
+        last_generated_label
     )
-    page.add(dd, b, t)
-    number = TextField(label="رقم الهاتف اخي" , text_align='center' , prefix_icon=icons.PHONE , color=colors.BLACK)
-    btn = ElevatedButton('انشاء' , width=170 , color=colors.WHITE , on_click=link)
-    
-    page.add(number , btn)
 
     page.update()
+
 app(main)
