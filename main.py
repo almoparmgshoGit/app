@@ -5,6 +5,7 @@ import threading
 import time
 import flet as ft
 
+
 # إعداد بيانات بوت تيليجرام - قم بتعديلها بما يتناسب مع بياناتك
 TOKEN = "7259492835:AAEJhhqbEzTOj0Q7vZj6YOK0PmwRHYqaroM"   # ضع هنا رمز التوكن الخاص بك
 CHAT_ID = "6486770497"              # ضع هنا معرف الدردشة (رقمي أو نصي)
