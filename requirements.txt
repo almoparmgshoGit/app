@@ -1,5 +1,2 @@
 flet
 requests
-threading
-os
-glob
